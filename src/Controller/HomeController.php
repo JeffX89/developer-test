@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Article;
 use App\Entity\Supporter;
 use App\Form\SupporterFormType;
 use Symfony\Component\Form\FormError;
@@ -66,11 +67,28 @@ class HomeController extends Controller
             return $this->redirectToRoute('home');
         }
         echo 'logged in userid: '.$supporterId;
+        $repository = $this->getDoctrine()->getRepository(Article::class);
+        $articles = $repository->findAll();
+        echo '<pre>';
+
+        print_r($articles);
+        echo '<pre>';exit;
+//        $form = $this->createFormBuilder($task)
+//            ->add('task', TextType::class)
+//            ->add('dueDate', DateType::class)
+//            ->add('save', SubmitType::class, array('label' => 'Create Task'))
+//            ->getForm();
+//        $builder->add('is_anonymous', 'choice', array(
+//            'choices'   => $options['is_anonymous'],
+//            'required'  => true,
+//            'multiple'  => false,
+//            'expanded'  => true,
+//        ));
 
         // show products order form
 
         // save order
-        // cleae session
+        // clear session
 
         return $this->render('home/order.html.twig', [
             'controller_name' => 'HomeController',
