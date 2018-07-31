@@ -19,8 +19,10 @@ class HomeController extends Controller
         $supporter = new Supporter();
         $form = $this->createForm(SupporterFormType::class, $supporter);
 
-        $form->handleRequest($request);
+        //clear session when going to index
+        $this->get('session')->set('loggedInSupporter', null);
 
+        $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $supporter = $form->getData();
             // check if supporter had already ordered.
@@ -58,13 +60,26 @@ class HomeController extends Controller
      */
     public function order()
     {
-        echo '<pre>';
-        print_r('test');
-        echo '<pre>';exit;
+        // send users to homepage when session is not set
+        $supporterId = $this->get('session')->get('loggedInSupporter');
+        if (empty($supporterId)) {
+            return $this->redirectToRoute('home');
+        }
+        echo 'logged in userid: '.$supporterId;
+
+        // show products order form
+
+        // save order
+        // cleae session
+
         return $this->render('home/order.html.twig', [
             'controller_name' => 'HomeController',
 //            'errors' => $form->getErrors(),
         ]);
+        echo '<pre>';
+
+        print_r('test');
+        echo '<pre>';exit;
     }
 
 
