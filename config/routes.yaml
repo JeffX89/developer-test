@@ -9,3 +9,7 @@ home:
 order:
     path: /order
     controller: App\Controller\HomeController::order
+
+order_success:
+    path: /order_success
+    controller: App\Controller\HomeController::order_success

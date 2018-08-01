@@ -3,8 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\Article;
+use App\Entity\Orders;
 use App\Entity\Supporter;
 use App\Form\SupporterFormType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
@@ -26,7 +30,7 @@ class HomeController extends Controller
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $supporter = $form->getData();
-            // check if supporter had already ordered.
+            // check if supporter had already ordered. todo this doesnt check order
             $repository = $this->getDoctrine()->getRepository(Supporter::class);
             $existingSupporter = $repository->findOneBy([
                 'birthDate' => $supporter->getBirthDate(),
@@ -47,9 +51,6 @@ class HomeController extends Controller
             }
 
         }
-//        echo '<pre>';
-//        print_r($form->getErrors()->count());
-//        echo '<pre>';exit;
         return $this->render('home/index.html.twig', [
             'controller_name' => 'HomeController',
             'form' => $form->createView(),
@@ -59,7 +60,7 @@ class HomeController extends Controller
     /**
      * @Route("/order", name="order")
      */
-    public function order()
+    public function order(Request $request)
     {
         // send users to homepage when session is not set
         $supporterId = $this->get('session')->get('loggedInSupporter');
@@ -69,36 +70,63 @@ class HomeController extends Controller
         echo 'logged in userid: '.$supporterId;
         $repository = $this->getDoctrine()->getRepository(Article::class);
         $articles = $repository->findAll();
-        echo '<pre>';
+        $articleFormChoices = [];
+        foreach ($articles as $article) {
+            $articleFormChoices[$article->getName()] = $article->getId();
+        }
+        $order = new Orders();
+        $form = $this->createFormBuilder($order)
+            ->add('articleId', ChoiceType::class, array(
+            'choices'   => $articleFormChoices,
+            'required'  => true,
+            'multiple'  => false,
+            'expanded'  => true,
+            ))
+//            ->add('supporterId', HiddenType::class, ['value' => $supporterId])
+            ->add('save', SubmitType::class, ['label'=>'Verzenden'])
+            ->getForm();
 
-        print_r($articles);
-        echo '<pre>';exit;
-//        $form = $this->createFormBuilder($task)
-//            ->add('task', TextType::class)
-//            ->add('dueDate', DateType::class)
-//            ->add('save', SubmitType::class, array('label' => 'Create Task'))
-//            ->getForm();
-//        $builder->add('is_anonymous', 'choice', array(
-//            'choices'   => $options['is_anonymous'],
-//            'required'  => true,
-//            'multiple'  => false,
-//            'expanded'  => true,
-//        ));
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $order = $form->getData();
+            $order->setSupporterId($supporterId);
+            // check if order already exists for supporter .
+            $repository = $this->getDoctrine()->getRepository(Orders::class);
+            $existingOrder = $repository->createQueryBuilder('o')
+                ->andWhere('o.supporterId = :supporter')
+                ->setParameter('supporter', $supporterId)
+                ->getQuery()
+                ->execute();
 
-        // show products order form
+            if (!empty($existingOrder)){
+                $form->addError(new FormError('U heeft reeds een bestelling geplaatst'));
+            }
 
-        // save order
-        // clear session
+            // save supporter and set in session
+            if ($form->getErrors()->count() === 0) {
+                $entityManager = $this->getDoctrine()->getManager();
+                $entityManager->persist($order);
+                $entityManager->flush();
+                return $this->redirectToRoute('order_success');
+            }
+
+        }
 
         return $this->render('home/order.html.twig', [
             'controller_name' => 'HomeController',
-//            'errors' => $form->getErrors(),
+            'form' => $form->createView(),
         ]);
-        echo '<pre>';
-
-        print_r('test');
-        echo '<pre>';exit;
     }
 
+    /**
+     * @Route("/order_success", name="order_success")
+     */
+    public function order_success()
+    {
+        $this->get('session')->set('loggedInSupporter', null);
+        return $this->render('home/order_success.html.twig', [
+            'controller_name' => 'HomeController',
+        ]);
+    }
 
 }
