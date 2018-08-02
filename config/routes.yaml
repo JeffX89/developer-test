@@ -10,6 +10,6 @@ order:
     path: /order
     controller: App\Controller\HomeController::order
 
-order_success:
-    path: /order_success
+order/success:
+    path: /order/success
     controller: App\Controller\HomeController::order_success
