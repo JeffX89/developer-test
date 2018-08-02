@@ -40,14 +40,14 @@ class HomeController extends Controller
                 'birthDate' => $supporter->getBirthDate(),
                 'supporterId' => $supporter->getSupporterId(),
             ]);
-            if (!empty($existingSupporter)){
-                $form->addError(new FormError('U heeft een ongeldige combinatie geboortedatum en lidnummer ingegeven'));
+            if (empty($existingSupporter)){
+                $form->addError(new FormError('Deze combinatie geboortedatum en lidnummer zijn niet geregistreerd'));
             }
 
             // check if supporter had already ordered
             $repository = $this->getDoctrine()->getRepository(Orders::class);
             $existingOrder = $repository->findOneBy([
-                'supporterId' => $supporter->getId(),
+                'supporterId' => $existingSupporter->getId(),
             ]);
             if (!empty($existingOrder)){
                 $form->addError(new FormError('U heeft reeds een bestelling geplaatst'));
@@ -55,7 +55,7 @@ class HomeController extends Controller
 
             // set supporter in session and go to order page
             if ($form->getErrors()->count() === 0) {
-                $this->get('session')->set('loggedInSupporter', $supporter->getId());
+                $this->get('session')->set('loggedInSupporter', $existingSupporter->getId());
                 return $this->redirectToRoute('order');
             }
 
